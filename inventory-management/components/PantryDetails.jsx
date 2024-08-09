@@ -11,29 +11,29 @@ import Paper from "@mui/material/Paper";
 import { Image } from "mui-image";
 import { formatDate } from "@/lib/formatDate";
 
-import OpenAI from "openai";
+// import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_KEY,
-});
+// const openai = new OpenAI({
+//   apiKey: process.env.NEXT_PUBLIC_OPENAI_KEY,
+// });
 
-const response = await openai.chat.completions.create({
-  model: "gpt-3.5-turbo",
-  messages: [
-    {
-      role: "user",
-      content: [
-        {
-          type: "text",
-          text: "Hello, how are you?",
-        },
-      ],
-    },
-  ],
-  max_tokens: 1000
-});
+// const response = await openai.chat.completions.create({
+//   model: "gpt-3.5-turbo",
+//   messages: [
+//     {
+//       role: "user",
+//       content: [
+//         {
+//           type: "text",
+//           text: "Hello, how are you?",
+//         },
+//       ],
+//     },
+//   ],
+//   max_tokens: 1000
+// });
 
-console.log(response.choices[0]);
+// console.log(response.choices[0]);
 
 export default function PantryDetails(props) {
   return (
