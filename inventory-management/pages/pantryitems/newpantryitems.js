@@ -38,6 +38,11 @@ import { storage } from "@/lib/firebase_config";
 /** Generate random character */
 import { v4 } from "uuid";
 
+/** Application state management */
+import { useImageUpload } from "@/imageUploadProvider";
+import { useAtom } from "jotai";
+
+
 
 
 
@@ -50,15 +55,113 @@ export default function NewPantryItems() {
    * Manages - inventory list, and new item input
    */
 
-    const [itemName, setItemName] = useState("");
-    const [category, setCategory] = useState({})
-    const [imageUpload, setImageUpload] = useState(null)
-    const [imageUrls, setImageUrls] = useState([])
+    const [item, setItem] = useState({ itemName: '', category: { name: '' } });
     const router = useRouter()
-    const imageListRef = ref(storage, "pantryImages/")
+    const [user, setUser] = useState(null)
 
-    /** function to fetch inventory data from Firestore */
+    const { setImageUpload, uploadImages, imageUrls } = useImageUpload();
 
+    /** function to fetch inventory data from Firestore 
+     * @function hanndleImageChange - Handles the image input
+     * 
+    */
+
+
+    const handleImageChange = async (e) => {
+        await setImageUpload(e.target.files[0]);
+    };
+
+    const handleSubmit = async () => {
+        try {
+            await uploadImages();
+            const latestImageUrl = imageUrls[imageUrls.length - 1]; // Get the latest uploaded image URL
+            await addItem(item, latestImageUrl);
+            if (latestImageUrl) {
+                console.log(`Uploaded items successfully`);
+                router.push('/pantryitems')
+
+            }
+            else{
+                console.log('No image uploaded')
+            }
+
+
+        }
+        catch (error) {
+            console.log(`Error uploading image ${error}`)
+        }
+
+    };
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setItem(prevState => ({
+            ...prevState,
+            [name]: value
+        }));
+
+    };
+
+
+    useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+            if (user) {
+                setUser(user)
+            }
+        })
+
+        return (() => {
+            unsubscribe()
+        })
+
+    }, [])
+
+
+    /** Functionality to add an item to -- DB */
+
+    const addItem = async (item, imageUrl) => {
+        try {
+            const docData = {
+                name: item.itemName,
+                category: {
+                    name: item.category.name
+                },
+                quantity: 1,
+                timestamp: Timestamp.now(),
+                imageUrl: imageUrl// Include the image URL here
+            };
+
+            console.log('Document data to be added:', docData);
+
+            const docRef = doc(collection(firestore, "inventory"), item.itemName);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const { quantity } = docSnap.data();
+                await updateDoc(docRef, {
+                    quantity: quantity + 1,
+                    timestamp: serverTimestamp()
+                });
+                console.log('Document updated successfully');
+            } else {
+                await setDoc(docRef, docData);
+                console.log('Document added successfully');
+            }
+
+            // Call updateInventory if it is defined
+            if (typeof updateInventory === 'function') {
+                await updateInventory();
+
+            } else {
+                console.warn('updateInventory function is not defined');
+            }
+        } catch (error) {
+            console.error('Error adding document:', error);
+        }
+
+    };
+
+    /** Updates the inventory */
     const updateInventory = async () => {
         const snapshot = query(collection(firestore, "inventory"));
         const docs = await getDocs(snapshot);
@@ -66,79 +169,20 @@ export default function NewPantryItems() {
         docs.forEach((doc) => {
             inventoryList.push({ name: doc.id, ...doc.data() });
         });
-
+        setItem(inventoryList);
     };
 
     useEffect(() => {
         updateInventory();
     }, []);
 
-    /** Image upload */
-    const uploadImages = function () {
-        if (imageUpload === null) return;
-        const imageRef = ref(storage, `images/${imageUpload.name + v4()}`);
-        uploadBytes(imageRef, imageUpload).then((snapshot) => {
-            getDownloadURL(snapshot.ref).then((url) => {
-                setImageUrls((prev) => [...prev, url]);
-            })
-        })
-    }
-
-    useEffect(() => {
-        /** List all images in the cloud storage */
-        listAll(imageListRef).then((response) => {
-            response.items.forEach((item) => {
-                getDownloadURL(item).then((url) => {
-                    setImageUrls((prev) => [...prev, url])
-                })
-            })
-        })
-    }, [])
 
 
-    /** Functionality to add an item to -- DB */
-    const addItem = async (item) => {
-        try {
-            const docData = {
-                name: item.itemName,
-                category: {
-                    name: item.category.name
-                },
 
-                quantity: 1,
-                timestamp: Timestamp.now()
-            };
-
-            const docRef = doc(collection(firestore, "inventory"), item.itemName);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                const { quantity } = docSnap.data();
-                await updateDoc(docRef, {
-                    quantity: quantity + 1,
-                    timestamp: serverTimestamp()
-                });
-            } else {
-                await setDoc(docRef, docData);
-
-            }
-            await updateInventory();
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
-    /** Data to populate the database with */
-
-    const data = {
-        itemName: itemName,
-        category: {
-            name: category
-        },
+    // }
 
 
-    }
-
-    if (!auth.currentUser) {
+    if (!user) {
         return <Error />
     }
 
@@ -150,37 +194,35 @@ export default function NewPantryItems() {
                 <Box className="mt-5 w-[50%]">
 
                     <FormControl className="flex flex-col gap-3"
-                        enctype="multipart/form-data"
+                        encType="multipart/form-data"
                     >
                         <TextField
                             label='item name'
-                            value={itemName}
-                            onChange={(e) => setItemName(e.target.value)}
+                            value={item?.itemName}
+                            onChange={handleInputChange}
                             type="text"
+                            name="itemName"
 
                         />
                         <TextField
                             label='category'
-                            value={category.name}
-                            onChange={(e) => setCategory({ name: e.target.value })}
+                            value={item?.category?.name}
+                            onChange={(e) => setItem(prevState => ({
+                                ...prevState,
+                                category: { name: e.target.value }
+                            }))}
                         />
                         <TextField
 
-                            onChange={(e) => setImageUpload(e.target.files[0])}
+                            onChange={handleImageChange}
                             type="file"
                             accept="image/*"
                         />
                         <div>
                             <Button variant="contained"
                                 type="submit"
-                                onClick={() => {
-                                    addItem(data)
-                                    uploadImages()
-                                    setItemName(""),
-                                        setCategory({ name: "" })
-                                    setImageUpload("");
-                                    router.push('/pantryitems')
-                                }}
+
+                                onClick={handleSubmit}
                             >
                                 Save
                             </Button>

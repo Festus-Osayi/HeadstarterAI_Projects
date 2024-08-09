@@ -20,6 +20,8 @@ import {
 import Paper from "@mui/material/Paper";
 import { firestore } from "@/lib/firebase_config";
 
+import { Image } from "mui-image";
+
 import {
   collection,
   doc,
@@ -60,27 +62,18 @@ export default function PantryList() {
   const [newCategory, setNewCategory] = useState({});
 
   const handleOpen = async (item) => {
-    setNewItemName(item.name);
-    setNewCategory(item.category?.name?.name);
+    setNewItemName(item?.name);
+    setNewCategory(item?.category?.name);
     setOpen(true);
   };
 
-  const handleClose = () => setOpen(false);
+  const handleClose = () => {
+    setOpen(false);
+    setNewItemName("");
+    setNewCategory({ name: "" });
+  };
 
   /** Read data from database */
-  async function getDBItem() {
-    const inventories = query(collection(firestore, "inventory"));
-    const docs = await getDocs(inventories);
-    const inventoryList = [];
-    docs.forEach((doc) => {
-      inventoryList.push({ name: doc.id, ...doc.data() });
-    });
-    setItems(inventoryList);
-  }
-
-  useEffect(() => {
-    getDBItem();
-  }, []);
 
   const updateInventory = async () => {
     const snapshot = query(collection(firestore, "inventory"));
@@ -91,6 +84,10 @@ export default function PantryList() {
     });
     setItems(inventoryList);
   };
+
+  useEffect(() => {
+    updateInventory();
+  }, []);
 
   /** Delete an item */
   const removeItem = async (item) => {
@@ -107,51 +104,40 @@ export default function PantryList() {
     await updateInventory();
   };
 
-  /** Update item */
   const updateItem = async function () {
     const docRef = doc(firestore, "inventory", newItemName);
     const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const data = {
-        name: newItemName,
-        category: {
-          name: { name: newCategory },
-        },
-      };
+    const data = {
+      name: newItemName,
+      category: { name: newCategory },
+    };
 
-      try {
+    try {
+      if (docSnap.exists()) {
         await updateDoc(docRef, data);
         console.log("Updated successfully");
-      } catch (error) {
-        console.log("Error updating item:", error);
-      }
-    } else {
-      console.log("Document does not exist");
-      // Create the document if it doesn't exist
-      const data = {
-        name: newItemName,
-        quantity: 1,
-        category: {
-          name: { name: newCategory },
-        },
-        timestamp: new Date(),
-      };
-
-      try {
+      } else {
+        data.timestamp = new Date();
+        data.quantity = 1;
         await setDoc(docRef, data);
         console.log("Document created successfully");
-      } catch (error) {
-        console.log("Error creating document:", error);
       }
+      await updateInventory();
+    } catch (error) {
+      console.log("Error updating/creating document:", error);
     }
-
-    await updateInventory();
   };
 
-
-  if (!auth.currentUser) {
-    return <Error />;
-  }
+  /** Handle the updates */
+  const handleUpdate = async () => {
+    try {
+      updateItem();
+      setNewItemName("");
+      handleClose();
+    } catch (error) {
+      console.log("Error updating item:", error);
+    }
+  };
 
   return (
     <>
@@ -186,15 +172,7 @@ export default function PantryList() {
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
                 />
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    updateItem();
-                    setNewItemName(""); // Clear the text field
-                    setNewCategory({ category: { name: "" } });
-                    handleClose();
-                  }}
-                >
+                <Button variant="outlined" onClick={handleUpdate}>
                   Update
                 </Button>
               </Stack>
@@ -213,17 +191,17 @@ export default function PantryList() {
           <TableContainer component={Paper}>
             <Table
               sx={{ minWidth: 650 }}
-              size="small"
+              // size="small"
               aria-label="a dense table"
             >
               <TableHead>
                 <TableRow>
-                  <TableCell>Item Name</TableCell>
+                  <TableCell>Item</TableCell>
+                  <TableCell align="right">Item Name</TableCell>
                   <TableCell align="right">Category</TableCell>
                   <TableCell align="right">Quantity</TableCell>
                   <TableCell align="right">Date</TableCell>
-                  <TableCell align="right"></TableCell>
-                  <TableCell align="right"></TableCell>
+                  <TableCell></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -235,44 +213,47 @@ export default function PantryList() {
                       sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
                       className="hover:bg-gray-200 transition ease-in-out"
                     >
-                      <TableCell
-                        component="th"
-                        scope="row"
-                        onClick={() => router.push(`/pantryitems/${row.name}`)}
-                        className="cursor-pointer"
-                      >
-                        {row.name}
-                      </TableCell>
-                      <TableCell align="right">
-                        {row?.category?.name?.name}
-                      </TableCell>
-                      <TableCell align="right">{row.quantity}</TableCell>
-                      <TableCell align="right">
-                        {formatDate(row.timestamp.toDate())}
+                      <TableCell component="th" scope="row">
+                        <Image
+                          src={row.imageUrl}
+                          alt={row.name}
+                          width={50}
+                          height={50}
+                          onClick={() =>
+                            router.push(`/pantryitems/${row?.name}`)
+                          }
+                          className="cursor-pointer rounded-md"
+                        />
                       </TableCell>
 
-                      <TableCell
-                        align="right"
-                        className="flex md:flex-row gap-2"
-                      >
-                        <Button
-                          variant="contained"
-                          onClick={() => handleOpen(row)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          onClick={() => removeItem(row.name)}
-                          variant="contained"
-                          className="bg-red-500
+                      <TableCell align="right">{row.name}</TableCell>
+                      <TableCell align="right">{row?.category?.name}</TableCell>
+                      <TableCell align="right">{row?.quantity}</TableCell>
+                      <TableCell align="right">
+                        {formatDate(row?.timestamp?.toDate())}
+                      </TableCell>
+
+                      <TableCell align="right">
+                        <TableCell className="flex gap-2 border-none">
+                          <Button
+                            variant="contained"
+                            onClick={() => handleOpen(row)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            onClick={() => removeItem(row?.name)}
+                            variant="contained"
+                            className="bg-red-500
                           
                           "
-                        >
-                          Remove
-                        </Button>
+                          >
+                            Remove
+                          </Button>
+                        </TableCell>
                       </TableCell>
 
-                      <TableCell align="right"></TableCell>
+                      {/* <TableCell align="right"></TableCell> */}
                     </TableRow>
                   ))}
               </TableBody>
