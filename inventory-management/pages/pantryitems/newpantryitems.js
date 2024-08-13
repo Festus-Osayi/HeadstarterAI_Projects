@@ -14,8 +14,6 @@ import { useRouter } from "next/router";
 import {
     collection,
     doc,
-    getDocs,
-    query,
     setDoc,
     getDoc,
     Timestamp,
@@ -24,47 +22,19 @@ import {
 } from "firebase/firestore";
 import Error from "@/components/Error";
 
-/** firebase storage*/
-import {
-    ref,
-    uploadBytes,
-    getDownloadURL,
-    listAll,
-    list,
-} from "firebase/storage";
 
-import { storage } from "@/lib/firebase_config";
-
-/** Generate random character */
-import { v4 } from "uuid";
 
 /** Application state management */
 import { useImageUpload } from "@/imageUploadProvider";
-import { useAtom } from "jotai";
-
-
-
-
 
 
 
 export default function NewPantryItems() {
 
-    /** State managements
-     * 
-   * Manages - inventory list, and new item input
-   */
-
     const [item, setItem] = useState({ itemName: '', category: { name: '' } });
     const router = useRouter()
     const [user, setUser] = useState(null)
-
     const { setImageUpload, uploadImages, imageUrls } = useImageUpload();
-
-    /** function to fetch inventory data from Firestore 
-     * @function hanndleImageChange - Handles the image input
-     * 
-    */
 
 
     const handleImageChange = async (e) => {
@@ -76,19 +46,12 @@ export default function NewPantryItems() {
             await uploadImages();
             const latestImageUrl = imageUrls[imageUrls.length - 1]; // Get the latest uploaded image URL
             await addItem(item, latestImageUrl);
-            if (latestImageUrl) {
-                console.log(`Uploaded items successfully`);
-                router.push('/pantryitems')
-
-            }
-            else{
-                console.log('No image uploaded')
-            }
-
+            if (!latestImageUrl) return;
+            router.push('/pantryitems')
 
         }
         catch (error) {
-            console.log(`Error uploading image ${error}`)
+            return error
         }
 
     };
@@ -101,7 +64,6 @@ export default function NewPantryItems() {
         }));
 
     };
-
 
     useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -131,7 +93,6 @@ export default function NewPantryItems() {
                 imageUrl: imageUrl// Include the image URL here
             };
 
-            console.log('Document data to be added:', docData);
 
             const docRef = doc(collection(firestore, "inventory"), item.itemName);
             const docSnap = await getDoc(docRef);
@@ -142,44 +103,17 @@ export default function NewPantryItems() {
                     quantity: quantity + 1,
                     timestamp: serverTimestamp()
                 });
-                console.log('Document updated successfully');
             } else {
                 await setDoc(docRef, docData);
-                console.log('Document added successfully');
-            }
-
-            // Call updateInventory if it is defined
-            if (typeof updateInventory === 'function') {
-                await updateInventory();
-
-            } else {
-                console.warn('updateInventory function is not defined');
             }
         } catch (error) {
-            console.error('Error adding document:', error);
+            return error
         }
 
     };
 
-    /** Updates the inventory */
-    const updateInventory = async () => {
-        const snapshot = query(collection(firestore, "inventory"));
-        const docs = await getDocs(snapshot);
-        const inventoryList = [];
-        docs.forEach((doc) => {
-            inventoryList.push({ name: doc.id, ...doc.data() });
-        });
-        setItem(inventoryList);
-    };
-
-    useEffect(() => {
-        updateInventory();
-    }, []);
 
 
-
-
-    // }
 
 
     if (!user) {
@@ -192,9 +126,10 @@ export default function NewPantryItems() {
             <Container>
 
                 <Box className="mt-5 w-[50%]">
-
-                    <FormControl className="flex flex-col gap-3"
+                    <FormControl
+                        className="flex flex-col gap-3"
                         encType="multipart/form-data"
+
                     >
                         <TextField
                             label='item name'
@@ -221,14 +156,12 @@ export default function NewPantryItems() {
                         <div>
                             <Button variant="contained"
                                 type="submit"
-
                                 onClick={handleSubmit}
                             >
                                 Save
                             </Button>
                         </div>
                     </FormControl>
-
                 </Box>
             </Container>
         </>

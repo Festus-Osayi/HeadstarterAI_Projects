@@ -6,20 +6,14 @@ import {
   TableRow,
   TableCell,
   Table,
-  Typography,
+  Typography
 } from "@mui/material";
 import Paper from "@mui/material/Paper";
 import { Image } from "mui-image";
 import { formatDate } from "@/lib/formatDate";
-import OpenAI from "openai";
-import { useEffect, useState } from "react";
 
-const openai = new OpenAI({
-  apiKey: process.env.NEXT_PUBLIC_OPENAI_KEY,
-  dangerouslyAllowBrowser: true,
-});
+
 export default function PantryDetails(props) {
-  const [imageUrl, setImageUrl] = useState([]);
   
 
   return (
@@ -54,6 +48,8 @@ export default function PantryDetails(props) {
             </TableBody>
           </Table>
         </TableContainer>
+        <Typography variant="h6" className="mt-8">
+          Recipe recommendations</Typography>
       </Box>
     </>
   );

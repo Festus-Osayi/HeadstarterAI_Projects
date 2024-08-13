@@ -7,6 +7,7 @@ import { getDoc, doc, collection } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import PantryDetails from "@/components/PantryDetails";
 import { IoIosArrowRoundBack } from "react-icons/io";
+import ImageDesc from "@/components/ImageDesc";
 
 
 export default function ItemDetails() {
@@ -15,18 +16,25 @@ export default function ItemDetails() {
     const [itemDetails, setItemDetails] = useState([])
 
     async function readDB() {
-        const docRef = doc(firestore, "inventory", id)
-        const docSnap = await getDoc(docRef)
+        try {
+            const docRef = doc(firestore, "inventory", id)
+            if (!docRef) return;
+            const docSnap = await getDoc(docRef)
+            if (docSnap.exists()) {
+                setItemDetails(docSnap.data())
+            }
 
-        setItemDetails(docSnap.data())
+        }
+        catch (error) {
+            console.log(error)
+        }
+
 
     }
 
     useEffect(() => {
         readDB()
     }, [])
-
-    console.log(itemDetails)
 
     return (
         <>
@@ -38,12 +46,13 @@ export default function ItemDetails() {
                     mb: 5,
                 }} className='text-[#1976D2]'>Pantry Details</Typography>
 
-                <div className="bg-[#1976D2] w-10 flex justify-center items-center rounded-md mb-10 cursor-pointer" 
-                onClick={() => router.back()}
+                <div className="bg-[#1976D2] w-10 flex justify-center items-center rounded-md mb-10 cursor-pointer"
+                    onClick={() => router.back()}
                 >
-                    <IoIosArrowRoundBack className="text-white text-2xl"/>
+                    <IoIosArrowRoundBack className="text-white text-2xl" />
                 </div>
                 <PantryDetails {...itemDetails} />
+                <ImageDesc {...itemDetails} />
             </Container>
         </>
     )

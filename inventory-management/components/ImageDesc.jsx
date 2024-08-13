@@ -1,8 +1,9 @@
-import { Grid, styled, Paper, Container } from "@mui/material";
+import { Grid, styled, Paper, Container, Typography, Alert } from "@mui/material";
 
 import OpenAI from "openai";
 import { useEffect, useState } from "react";
 import RecipeCard from "./RecipeCard";
+import Spinners from "./Spinners";
 
 /** Grid component */
 
@@ -25,8 +26,8 @@ function ImageDesc(props) {
   const [imageRecipe, setImageRecipe] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-
   async function main() {
+    setIsLoading(true);
     try {
       setIsLoading(true);
       const response = await openai.chat.completions.create({
@@ -47,7 +48,7 @@ function ImageDesc(props) {
             content: [
               {
                 type: "text",
-                text: "Create a clean JSON structure for a recipe, including a description. Ensure that the JSON structure returns only one valid free image URL per category from reliable sources, avoiding lists of images, and exclude any URLs from example.com.",
+                text: "Create a clean JSON structure for a recipe, including a description. Ensure that the JSON structure returns only one valid free image recipe URL per category from reliable sources, avoiding lists of images, and exclude any URLs from example.com.",
               },
 
               {
@@ -62,36 +63,37 @@ function ImageDesc(props) {
       });
 
       const result = JSON.parse(response.choices[0].message.content);
-      console.log(`After parsing, result is ${result}`);
       if (result) {
         setImageRecipe((prev) => [...prev, result]);
+        setIsLoading(false);
       }
     } catch (error) {
       setError(error.message);
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
+    }  
+    
   }
 
   useEffect(() => {
     main();
   }, [props.imageUrl]);
 
-  console.log({ imageRecipe });
   return (
     <Container maxWidth="lg">
-      <Grid container spacing={2}>
-        {imageRecipe &&
+      {isLoading && <Spinners />}
+      <Grid container spacing={5}>
+        {!isLoading &&
+          imageRecipe &&
           imageRecipe.length > 0 &&
           imageRecipe.map(({ recipe }, index) => (
             <Grid xs={12} sm={6} md={4} key={index}>
               <Item>
                 <RecipeCard
                   name={recipe?.title || recipe?.name}
-                  image={recipe?.image || recipe?.image?.url}
-                  desc={recipe?.description}
-                  instructions={recipe?.instructions}
+                  image={`${recipe.image ? recipe.image : recipe?.image?.url}`}
+                  desc={recipe?.description || "No description available"}
+                  instructions={
+                    recipe?.instructions || "No instructions available"
+                  }
                 />
               </Item>
             </Grid>

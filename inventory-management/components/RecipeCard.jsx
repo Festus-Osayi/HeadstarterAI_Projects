@@ -13,7 +13,7 @@ import {
 import IconButton from "@mui/material/IconButton";
 import { blue } from "@mui/material/colors";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-
+import { useState } from "react";
 
 const ExpandMore = styled((props) => {
   const { expand, ...other } = props;
@@ -27,7 +27,7 @@ const ExpandMore = styled((props) => {
 }));
 
 export default function RecipeCard(props) {
-  const [expanded, setExpanded] = React.useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const handleExpandClick = () => {
     setExpanded(!expanded);
@@ -42,12 +42,11 @@ export default function RecipeCard(props) {
           </Avatar>
         }
         title={props?.name}
-        // subheader="September 14, 2016"
       />
       <CardMedia
         component="img"
         height="194"
-        images={props?.image}
+        image={props?.image}
         alt={props?.title}
       />
       <CardContent>

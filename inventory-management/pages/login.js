@@ -1,43 +1,53 @@
 import { useRouter } from "next/router";
-import { TextField, Container, Typography, Box, Link, Button, FormControl } from "@mui/material";
+import { TextField, Container, Typography, Box, Link, Button, FormControl, Alert } from "@mui/material";
 import { default as NextLink } from "next/link";
 import Layout from "@/components/Layout";
 import { useState } from "react";
 import { auth } from "@/lib/firebase_config";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import ReuseableHeading from "@/components/ReuseableHeading";
 
 export default function Login() {
     const router = useRouter()
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
+    const [errorMessage, setErrorMessage] = useState(null)
 
+    function clearField() {
+        setEmail("")
+        setPassword("")
+    }
     async function handleLogin(e) {
         e.preventDefault()
         try {
             const user = await signInWithEmailAndPassword(auth, email, password)
             if (user) {
                 router.push("/pantryitems")
-                setEmail("")
-                setPassword("")
+                clearField()
+                console.log(user)
             }
         } catch (error) {
-            console.error(error)
+            console.log(error.message)
+            setErrorMessage(error.message)
+            clearField()
         }
     }
 
 
+
     return (
         <>
-            <Layout>
-                <Typography variant='h2' color='primary' textAlign='center' className="text-[#1976D2] text-left">Pantry Tracker</Typography>
+            <Layout />
+            <Container maxWidth='lg'>
+
+                <ReuseableHeading>
+                    Pantry Tracker
+                </ReuseableHeading>
                 <Box
-                    component='form'
                 >
-
-
                     {/* input*/}
                     <div className="flex flex-col justify-center gap-3 h-[50vh]">
-                        <Typography variant="h4">Login to get started</Typography>
+                        <Typography variant="h5">Login to get started</Typography>
                         <div className="flex gap-2">
                             <p>Have no account yet?</p>
                             <NextLink
@@ -50,7 +60,9 @@ export default function Login() {
                         </div>
 
                         <FormControl
-                            className="flex w-[100%] md:w-[50%] gap-5"
+                            component='form'
+                            className="flex w-[100%] md:w-[50%] gap-5 "
+                            onSubmit={handleLogin}
                         >
                             <TextField id="email" label="Email" variant="outlined" type="email"
                                 required
@@ -65,20 +77,22 @@ export default function Login() {
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                             />
-                            <div>
+                            <div className="flex justify-between items-center">
                                 <Button
-                                    type="button"
+                                    type="submit"
                                     variant="contained"
-                                    onClick={handleLogin}
                                 >
                                     Login
                                 </Button>
+
+                                {
+                                    errorMessage && <Alert severity="error">Sorry: Invalid credentials</Alert>
+                                }
                             </div>
                         </FormControl>
                     </div>
                 </Box>
-            </Layout >
-
+            </Container>
         </>
     )
 }

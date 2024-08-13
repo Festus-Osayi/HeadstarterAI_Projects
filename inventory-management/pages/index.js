@@ -10,18 +10,20 @@ export default function Home() {
 
 
   return (
-    <>
-      <Container maxWidth='lg'>
-        <Typography variant='h2' color='primary' textAlign='center' className="text-black text-left">Pantry Tracker</Typography>
+    <div className="bg-[url('/images/bg4.jpg')]
+    bg-contain bg-center h-screen w-screen flex justify-center items-center"
+    >
+      <Container maxWidth='lg'
+      >
         <div className="flex justify-center items-center h-[50vh]">
           <Button
-            variant="contained" color="primary"
+            variant="contained" color="success"
             onClick={() => router.push("/login")}>Get started</Button>
 
         </div>
 
       </Container>
 
-    </>
+    </div>
   )
 }

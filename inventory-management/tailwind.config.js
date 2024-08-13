@@ -11,6 +11,11 @@ module.exports = {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic":
           "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
+          "home-bg": "url('/public/images/bg1.jpg')",
+          "home-bg1": "url('/public/images/bg2.jpg')",
+          "home-bg2": "url('/public/images/bg3_.jpg')",
+          "home-bg3": "url('/public/images/bg4.jpg')",
+          "home-bg4": "url('/public/images/bg5.jpg')",
       },
     },
   },

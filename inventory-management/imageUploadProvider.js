@@ -12,18 +12,16 @@ const useImageUpload = () => {
     const [imageUrls, setImageUrls] = useAtom(imageUrlsAtom);
 
     const uploadImages = async () => {
-        if (!imageUpload) return null;
 
-        console.log('Image file selected:', imageUpload);
         try {
+            if (!imageUpload) return null;
             const imageRef = ref(storage, `images/${imageUpload.name + uuidv4()}`);
             await uploadBytes(imageRef, imageUpload);
             const url = await getDownloadURL(imageRef);
-            console.log('Image uploaded successfully:', url);
             setImageUrls((prev) => [...prev, url]);
             return url
         } catch (error) {
-            console.error('Error uploading image:', error);
+            return error
         }
     };
 
