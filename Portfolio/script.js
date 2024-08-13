@@ -8,6 +8,20 @@ const linksEl = document.querySelector('.permalinks')
 
 
 
+linksEl.addEventListener("click", function () {
+    let links = false
+    links = !links
+    if (links) {
+        linksEl.classList.remove('show')
+    }
+    else {
+        linksEl.classList.add('show')
+    }
+    
+
+})
+
+
 
 
 btnEl.addEventListener('click', function () {
@@ -17,7 +31,8 @@ btnEl.addEventListener('click', function () {
 
 
 function readData(userData) {
-    let items = `
+    let items = ""
+    items += `
         <article class="portfolio__item">
             <div class="portfolio__item-img">
                 <img src="${userData.image}" alt="${userData.title}" />
